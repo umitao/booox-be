@@ -10,16 +10,17 @@ const pool = new Pool({
   port: 5432,
 });
 
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
 app.post("/book", function (req, res) {
-  let {
-    newBookIsbn,
-    newBookTitle,
-    newBookAuthor,
-    newBookPublisher,
-    newBookPublishedDate,
-    newBookSubtitle,
-    newBookLanguage,
-  } = req.body;
+  const newBookIsbn = req.body.isbn;
+  const newBookTitle = req.body.title;
+  const newBookAuthor = req.body.author;
+  const newBookPublisher = req.body.publisher;
+  const newBookPublishedDate = req.body.published_date;
+  const newBookSubtitle = req.body.subtitle;
+  const newBookLanguage = req.body.language;
 
   let query =
     "INSERT INTO books (isbn, title, author, publisher, published_date, subtitle, language) VALUES ($1, $2, $3, $4, $5, $6, $7 )";
