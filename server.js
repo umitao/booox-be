@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const { Pool } = require("pg");
+const morgan = require("morgan");
 
 const pool = new Pool({
   user: "postgres",
@@ -10,30 +11,38 @@ const pool = new Pool({
   port: 5432,
 });
 
+// READ BODIES AND URL FROM REQUESTS
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// LOG ALL REQUESTS
+app.use(morgan("tiny"));
+
 app.post("/book", function (req, res) {
-  const newBookIsbn = req.body.isbn;
-  const newBookTitle = req.body.title;
-  const newBookAuthor = req.body.author;
-  const newBookPublisher = req.body.publisher;
-  const newBookPublishedDate = req.body.published_date;
-  const newBookSubtitle = req.body.subtitle;
-  const newBookLanguage = req.body.language;
+  const {
+    isbn,
+    title,
+    author,
+    publisher,
+    published_date,
+    subtitle,
+    language,
+  } = req.body;
+
+  console.log(req.body);
 
   let query =
     "INSERT INTO books (isbn, title, author, publisher, published_date, subtitle, language) VALUES ($1, $2, $3, $4, $5, $6, $7 )";
 
   pool
     .query(query, [
-      newBookIsbn,
-      newBookTitle,
-      newBookAuthor,
-      newBookPublisher,
-      newBookPublishedDate,
-      newBookSubtitle,
-      newBookLanguage,
+      isbn,
+      title,
+      author,
+      publisher,
+      published_date,
+      subtitle,
+      language,
     ])
     .then((result) => res.status(201).send("New Book Added!"))
     .catch((error) => {
