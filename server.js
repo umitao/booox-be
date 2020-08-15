@@ -32,7 +32,7 @@ app.post("/book", function (req, res) {
   console.log(req.body);
 
   let query =
-    "INSERT INTO books (isbn, title, author, publisher, published_date, subtitle, language) VALUES ($1, $2, $3, $4, $5, $6, $7 )";
+    "INSERT INTO books (isbn, title, author, publisher, published_date, subtitle, language) VALUES ($1, $2, $3, $4, $5, $6, $7 ) RETURNING id";
 
   pool
     .query(query, [
@@ -44,10 +44,14 @@ app.post("/book", function (req, res) {
       subtitle,
       language,
     ])
-    .then((result) => res.status(201).send("New Book Added!"))
+    .then((result) => res.status(201).json(result.rows[0]))
     .catch((error) => {
-      console.log(error);
-      res.status(500).send("Something went wrong :( ...");
+      if (error.code === "23505") {
+        res.status(400).send("Duplicate ISBN number");
+      } else {
+        console.log(error);
+        res.status(500).send("Something went wrong :( ...");
+      }
     });
 });
 
