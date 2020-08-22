@@ -75,8 +75,8 @@ app.post("/userinfo", (req, res) => {
 
 
 
-app.get('/users', function (req, res){
-  pool.query('select * from users;')
+app.get('/search', function (req, res){
+  pool.query('select b.id, b.author, b.title, b.publisher, b.published_date, b.subtitle, b.isbn, b."language"from books b')
   .then (result => res.status(201).send(result.rows))
 })
 
