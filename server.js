@@ -2,6 +2,8 @@ const express = require("express");
 const app = express();
 const { Pool } = require("pg");
 const morgan = require("morgan");
+const cors = require("cors");
+app.use(cors());
 
 const pool = new Pool({
   user: "postgres",
@@ -55,6 +57,17 @@ app.post("/book", function (req, res) {
     });
 });
 
-app.listen(3000, function () {
-  console.log("Server is listening on port 3000. Ready to accept requests!");
+//GET method to access DB and return results
+app.get("/search", function (req, res) {
+  const search = req.query.search;
+  let query = `SELECT * FROM books WHERE (title ILIKE '%${search}%') OR (author ILIKE '%${search}%') OR (subtitle ILIKE '%${search}%')`;
+
+  pool
+    .query(query)
+    .then((result) => res.json(result.rows))
+    .catch((e) => console.error(e));
+});
+
+app.listen(3001, function () {
+  console.log("Server is listening on port 3001. Ready to accept requests!");
 });
