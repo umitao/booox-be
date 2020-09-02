@@ -59,11 +59,15 @@ app.post("/book", function (req, res) {
 
 //GET method to access DB and return results
 app.get("/search", function (req, res) {
-  const search = req.query.search;
-  let query = `SELECT * FROM books WHERE (title ILIKE '%${search}%') OR (author ILIKE '%${search}%') OR (subtitle ILIKE '%${search}%')`;
+  const searchTerm = req.query.q;
+  //const author = req.query.author;
 
+  let query =
+    "SELECT * FROM books WHERE title_tokens || author_tokens || language_tokens @@plainto_tsquery($1);";
+
+  console.log(searchTerm);
   pool
-    .query(query)
+    .query(query, [searchTerm])
     .then((result) => res.json(result.rows))
     .catch((e) => console.error(e));
 });
