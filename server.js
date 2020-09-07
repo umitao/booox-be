@@ -59,28 +59,21 @@ app.post("/book", function (req, res) {
     });
 });
 
-app.post("/userinfo", (req, res) => {
-  let query = 'insert into users (name, last_name, email) values($1, $2, $3)';
+//GET method to access DB and return results
+app.get("/search", function (req, res) {
+  const searchTerm = req.query.q;
+  //const author = req.query.author;
 
-  const {firstName, lastName, email} = req.body;
+  let query =
+    "SELECT * FROM books WHERE title_tokens || author_tokens || language_tokens @@plainto_tsquery($1);";
 
-  pool.query(query, [firstName, lastName, email])
-  .then(result => res.status(201).send("New User Added"))
-  .catch((error) => {
-    console.log(error);
-    res.status(500).send("Something went wrong :( ...");
-  });
+  console.log(searchTerm);
+  pool
+    .query(query, [searchTerm])
+    .then((result) => res.json(result.rows))
+    .catch((e) => console.error(e));
+});
 
-})
-
-
-
-app.get('/users', function (req, res){
-  pool.query('select * from users;')
-  .then (result => res.status(201).send(result.rows))
-})
-
-
-app.listen(3000, function () {
-  console.log("Server is listening on port 3000. Ready to accept requests!");
+app.listen(3001, function () {
+  console.log("Server is listening on port 3001. Ready to accept requests!");
 });
