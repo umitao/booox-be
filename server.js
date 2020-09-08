@@ -59,14 +59,15 @@ app.post("/book", function (req, res) {
 
 //GET method to access DB and return results
 app.get("/search", function (req, res) {
-  const { searchTerm } = req.body;
-  console.log(searchTerm);
+  const searchTerm = req.query.q;
+  const regexSearch = searchTerm.replace(/\w\s/g, ":* | ") + ":*";
+  console.log(regexSearch);
 
   let query =
-    "SELECT * FROM books WHERE title_tokens || author_tokens || language_tokens @@ plainto_tsquery($1);";
+    "SELECT * FROM books WHERE title_tokens || author_tokens || language_tokens @@ to_tsquery($1);";
 
   pool
-    .query(query, [searchTerm])
+    .query(query, [regexSearch])
     .then((result) => res.json(result.rows))
     .catch((e) => console.error(e));
 });
