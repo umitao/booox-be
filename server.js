@@ -60,7 +60,7 @@ app.post("/book", function (req, res) {
 //GET method to access DB and return results
 app.get("/search", function (req, res) {
   const searchTerm = req.query.q;
-  const regexSearch = searchTerm.replace(/\w\s/g, ":* | ") + ":*";
+  const regexSearch = searchTerm.replace(/\b\s/g, ":* | ") + ":*";
   console.log(regexSearch);
 
   let query =
