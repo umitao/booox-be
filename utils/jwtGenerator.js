@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken");
-const { idleCount } = require("../db");
 require("dotenv").config();
 
 function jwtGenerator(user_id) {

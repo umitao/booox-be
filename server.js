@@ -16,6 +16,8 @@ app.use(morgan("dev"));
 
 app.use("/auth", require("./routes/jwtAuth"));
 
+app.use("/profile", require("./routes/profile"));
+
 app.post("/book", function (req, res) {
   const {
     isbn,
