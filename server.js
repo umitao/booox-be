@@ -1,24 +1,20 @@
 const express = require("express");
 const app = express();
-const { Pool } = require("pg");
 const morgan = require("morgan");
 const cors = require("cors");
 app.use(cors());
-
-const pool = new Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "booox",
-  password: "",
-  port: 5432,
-});
+const pool = require("./db");
 
 // READ BODIES AND URL FROM REQUESTS
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // LOG ALL REQUESTS
-app.use(morgan("tiny"));
+app.use(morgan("dev"));
+
+//Register & Login Routes
+
+app.use("/auth", require("./routes/jwtAuth"));
 
 app.post("/book", function (req, res) {
   const {
