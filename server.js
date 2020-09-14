@@ -1,11 +1,15 @@
 const express = require("express");
 const app = express();
+<<<<<<< HEAD
 const bodyParser = require('body-parser');
 const { Pool } = require("pg");
+=======
+>>>>>>> 7427efe96dcf04f8ceba656b0b52ab235cba6cbb
 const morgan = require("morgan");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 app.use(cors());
+<<<<<<< HEAD
 
 const pool = new Pool({
   user: "postgres",
@@ -14,6 +18,9 @@ const pool = new Pool({
   password: "roshansapkota1",
   port: 5432,
 });
+=======
+const pool = require("./db");
+>>>>>>> 7427efe96dcf04f8ceba656b0b52ab235cba6cbb
 
 // READ BODIES AND URL FROM REQUESTS
 app.use(bodyParser.json());
@@ -21,7 +28,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // LOG ALL REQUESTS
-app.use(morgan("tiny"));
+app.use(morgan("dev"));
+
+//Register & Login Routes
+
+app.use("/auth", require("./routes/jwtAuth"));
+
+app.use("/profile", require("./routes/profile"));
 
 app.post("/book", function (req, res) {
   const {
@@ -62,8 +75,14 @@ app.post("/book", function (req, res) {
 
 //GET method to access DB and return results
 app.get("/search", function (req, res) {
+<<<<<<< HEAD
   //const { searchTerm } = req.body;
   const searchTerm = req.query.q;
+=======
+  const searchTerm = req.query.q;
+  const regexSearch = searchTerm.replace(/\b\s/g, ":* | ") + ":*";
+  console.log(regexSearch);
+>>>>>>> 7427efe96dcf04f8ceba656b0b52ab235cba6cbb
 
 
   const regexSearch = searchTerm.replace(/\b\s/g, ":* | ") + ":*";
