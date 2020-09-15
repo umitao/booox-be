@@ -55,7 +55,7 @@ app.post("/book", function (req, res) {
     });
 });
 
-//GET method to access DB and return results
+//Search engine with tsquery
 app.get("/search", function (req, res) {
   const searchTerm = req.query.q;
   const regexSearch = searchTerm.replace(/\b\s/g, ":* | ") + ":*";
@@ -70,6 +70,6 @@ app.get("/search", function (req, res) {
     .catch((e) => console.error(e));
 });
 
-app.listen(3001, function () {
+app.listen(3002, function () {
   console.log("Server is listening on port 3001. Ready to accept requests!");
 });

@@ -49,7 +49,7 @@ router.post("/login", validInfo, async (req, res) => {
     const user = await pool.query("SELECT * FROM users WHERE email = $1", [
       email,
     ]);
-    console.log(user.rows);
+    // console.log(user.rows);
     if (user.rows.length === 0) {
       return res.status(401).json("Invalid Credentials!");
     }
@@ -60,6 +60,7 @@ router.post("/login", validInfo, async (req, res) => {
       return res.status(401).json("Invalid Password!");
     }
     const token = jwtGenerator(user.rows[0].id);
+    //console.log({ token });
     return res.json({ token });
   } catch (err) {
     console.error(err.message);
@@ -67,7 +68,7 @@ router.post("/login", validInfo, async (req, res) => {
   }
 });
 
-//JWT Verification
+//JWT Verification while logged in
 router.get("/verify", authorization, async (req, res) => {
   try {
     res.json(true);
