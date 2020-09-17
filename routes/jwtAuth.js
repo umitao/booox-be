@@ -10,9 +10,9 @@ router.post("/register", validInfo, async (req, res) => {
   try {
     //1.Destructure the req.body (name, email, password)
     const { name, email, password } = req.body;
-
+    console.log( name, email, password);
     //2.Check if user exists
-    const user = await pool.query("SELECT * FROM users WHERE email = $1", [
+    const user = await pool.query("SELECT * FROM users WHERE user_email = $1", [
       email,
     ]);
     if (user.rows.length !== 0) {
@@ -26,13 +26,13 @@ router.post("/register", validInfo, async (req, res) => {
 
     //4.Save new user in DB
     const newUser = await pool.query(
-      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *",
+      "INSERT INTO users (user_name, user_email, user_password) VALUES ($1, $2, $3) RETURNING *",
       [name, email, bcryptPassword]
     );
 
     //5.Generate JWT
 
-    const token = jwtGenerator(newUser.rows[0].id);
+    const token = jwtGenerator(newUser.rows[0].user_id);
 
     return res.json({ token });
   } catch (err) {
@@ -46,7 +46,7 @@ router.post("/register", validInfo, async (req, res) => {
 router.post("/login", validInfo, async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await pool.query("SELECT * FROM users WHERE email = $1", [
+    const user = await pool.query("SELECT * FROM users WHERE user_email = $1", [
       email,
     ]);
     console.log(user.rows);
@@ -54,13 +54,14 @@ router.post("/login", validInfo, async (req, res) => {
       return res.status(401).json("Invalid Credentials!");
     }
 
-    const validPassword = await bcrypt.compare(password, user.rows[0].password);
+    const validPassword = await bcrypt.compare(password, user.rows[0].user_password);
 
     if (!validPassword) {
       return res.status(401).json("Invalid Password!");
     }
-    const token = jwtGenerator(user.rows[0].id);
-    return res.json({ token });
+    const token = jwtGenerator(user.rows[0].user_id);
+    console.log(token);
+    res.json({token})
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error");

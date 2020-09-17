@@ -1,29 +1,12 @@
 const express = require("express");
 const app = express();
-<<<<<<< HEAD
-const bodyParser = require('body-parser');
-const { Pool } = require("pg");
-=======
->>>>>>> 7427efe96dcf04f8ceba656b0b52ab235cba6cbb
 const morgan = require("morgan");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 app.use(cors());
-<<<<<<< HEAD
-
-const pool = new Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "booox",
-  password: "roshansapkota1",
-  port: 5432,
-});
-=======
 const pool = require("./db");
->>>>>>> 7427efe96dcf04f8ceba656b0b52ab235cba6cbb
 
 // READ BODIES AND URL FROM REQUESTS
-app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -34,7 +17,28 @@ app.use(morgan("dev"));
 
 app.use("/auth", require("./routes/jwtAuth"));
 
-app.use("/profile", require("./routes/profile"));
+//userprofile dashboard 
+app.use("/userpage", require("./routes/userpage"));
+
+app.use("/bookupload",  require("./routes/userpage"));
+
+//upload books along with user
+app.post("/uservsbooks" , async (req, res) => {
+  const user_id = req.query.q;
+  try {
+    let query =
+    `INSER`
+    ///////////////////////////////continue from here...................
+
+  pool
+    .query(query, [])
+    .then((result) => res.status(201).json(result.rows[0]))
+    
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
 
 app.post("/book", function (req, res) {
   const {
@@ -75,17 +79,8 @@ app.post("/book", function (req, res) {
 
 //GET method to access DB and return results
 app.get("/search", function (req, res) {
-<<<<<<< HEAD
-  //const { searchTerm } = req.body;
   const searchTerm = req.query.q;
-=======
-  const searchTerm = req.query.q;
-  const regexSearch = searchTerm.replace(/\b\s/g, ":* | ") + ":*";
-  console.log(regexSearch);
->>>>>>> 7427efe96dcf04f8ceba656b0b52ab235cba6cbb
-
-
-  const regexSearch = searchTerm.replace(/\b\s/g, ":* | ") + ":*";
+  const regexSearch = searchTerm.replace(/\b\s/g, ":* | " + ":*");
  
   
   let query =
@@ -109,38 +104,18 @@ app.delete("/delete", function (req, res) {
     .catch((e) => console.error(e));
 });
 
-//registering 401 for unauthorised and 403 for unauthenticated
-app.post("/register", async(req, res) => {
-  try {
-      //1.destructure the req.body
+app.get("/users", function (req, res) {
+  const searchTerm = req.query.q;
+  
+  let query =
+    "SELECT * from users where user user_email = $1";
 
-      const {name, email, password } = req.body;
+  pool
+    .query(query, [searchTerm])
+    .then((result) => res.json(result.rows))
+    .catch((e) => console.error(e));
+});
 
-      //2.check if the user exists (if exists then throw the error)
-
-      const user = await pool.query("SELECT * FROM users WHERE user_email = $1", [email]);
-
-      if(user.rows.length !== 0) {
-        return res.status(401).send("user already exists");
-      }
-
-      //3. Bycript the user password
-
-      const saltRound = 10;
-      const salt =  await bcrypt.genSalt(saltRound);
-      const bcryptPassword = await bcrypt.hash(password, salt);
-
-      //4. enter the new user inside our database
-
-      const newUser = await pool.query("INSERT INTO users (user_name, user_email, user_password) values ($1, $2, $3) returning *", [name, email, bcryptPassword]);
-      res.json(newUser.rows[0]);
-      res.send("new user added");
-  } catch (err) {
-    console.error(error.message);
-    res.status(500).send("server error");
-    
-  }
-})
 
 
 
