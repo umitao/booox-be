@@ -59,7 +59,7 @@ router.post("/login", validInfo, async (req, res) => {
     if (!validPassword) {
       return res.status(401).json("Invalid Password!");
     }
-    const token = jwtGenerator(user.rows[0].id);
+    const token = jwtGenerator(user.rows[0].id, user.rows[0].name);
     //console.log({ token });
     return res.json({ token });
   } catch (err) {

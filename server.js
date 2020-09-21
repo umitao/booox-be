@@ -21,6 +21,7 @@ app.use("/auth", require("./routes/jwtAuth"));
 
 app.use("/profile", require("./routes/profile"));
 
+//Add a book
 app.post("/book", authorization, function (req, res) {
   const { id } = req.user;
 
@@ -63,6 +64,19 @@ app.post("/book", authorization, function (req, res) {
     });
 });
 
+//Edit book info
+app.put("/bookupdate:bookId", authorization, function (req, res) {
+  const { bookId } = req.params;
+  const { title, author, publisher, subtitle, language } = req.body;
+
+  console.log(req.fields);
+
+  let query =
+    "UPDATE books SET title = $1, author = $2, publisher = $3, subtitle = $4, language = $5 WHERE id = $6;";
+
+  pool.query(query, [title, author, publisher, subtitle, language, bookId]);
+});
+
 //Search engine with tsquery
 app.get("/search", function (req, res) {
   const searchTerm = req.query.q;
@@ -74,7 +88,28 @@ app.get("/search", function (req, res) {
   pool
     .query(query, [regexSearch])
     .then((result) => res.json(result.rows))
-    .catch((e) => console.error(e));
+    .catch((err) => console.error(err));
+});
+
+//Profile page
+app.get("/profile", authorization, function (req, res) {
+  const { id } = req.user;
+  let query = "SELECT name FROM users WHERE id = $1";
+
+  pool
+    .query(query, [id])
+    .then((result) => res.json(result.rows))
+    .catch((err) => console.error(err));
+});
+
+//Get all books
+app.get("/books", function (req, res) {
+  let query = "SELECT * FROM books";
+
+  pool
+    .query(query)
+    .then((result) => res.json(result.rows))
+    .catch((err) => console.error(err));
 });
 
 app.listen(3001, function () {
