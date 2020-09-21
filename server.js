@@ -92,7 +92,7 @@ app.get("/search", function (req, res) {
 });
 
 //Profile page
-app.get("/profile", authorization, function (req, res) {
+app.get("/userpage", authorization, function (req, res) {
   const { id } = req.user;
   let query = "SELECT name FROM users WHERE id = $1";
 
@@ -108,6 +108,17 @@ app.get("/books", function (req, res) {
 
   pool
     .query(query)
+    .then((result) => res.json(result.rows))
+    .catch((err) => console.error(err));
+});
+
+app.get("/:id/books", authorization, function (req, res) {
+  const { id } = req.params;
+  let query =
+    "select * from books b join users_vs_books uvb on b.id = uvb.books_id where uvb.users_id = $1;";
+
+  pool
+    .query(query, [id])
     .then((result) => res.json(result.rows))
     .catch((err) => console.error(err));
 });
