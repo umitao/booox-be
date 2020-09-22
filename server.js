@@ -22,23 +22,7 @@ app.use("/userpage", require("./routes/userpage"));
 
 app.use("/bookupload",  require("./routes/userpage"));
 
-//upload books along with user
-app.post("/uservsbooks" , async (req, res) => {
-  const user_id = req.query.q;
-  try {
-    let query =
-    `INSER`
-    ///////////////////////////////continue from here...................
 
-  pool
-    .query(query, [])
-    .then((result) => res.status(201).json(result.rows[0]))
-    
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server Error");
-  }
-});
 
 app.post("/book", function (req, res) {
   const {
@@ -66,7 +50,7 @@ app.post("/book", function (req, res) {
       subtitle,
       language,
     ])
-    .then((result) => res.status(201).json(result.rows[0]))
+    .then((result) => res.status(201).send(result.rows[0]))
     .catch((error) => {
       if (error.code === "23505") {
         res.status(400).send("Duplicate ISBN number");
@@ -92,6 +76,20 @@ app.get("/search", function (req, res) {
     .catch((e) => console.error(e));
 });
 
+//send all books 
+app.get("/filterwithid", function (req, res) {
+  const searchTerm = req.query.q;
+ let query =
+    "SELECT * FROM books where id = $1 ";
+
+  pool
+    .query(query, [searchTerm])
+    .then((result) => res.json(result.rows))
+    .catch((e) => console.error(e));
+});
+
+
+
 app.delete("/delete", function (req, res) {
   //const { searchTerm } = req.body;
   const deleteTerm = req.query.q;
@@ -113,6 +111,54 @@ app.get("/users", function (req, res) {
   pool
     .query(query, [searchTerm])
     .then((result) => res.json(result.rows))
+    .catch((e) => console.error(e));
+});
+//post on user vs books table
+app.post("/usersvsbooks", function (req, res) {
+ const {user_id, book_id} = req.body
+
+  let query = "INSERT INTO users_vs_books (users_id, books_id) VALUES ($1, $2)";
+
+  pool
+    .query(query, [
+      user_id,
+      book_id
+    ])
+    .then((result) => res.status(201).json(result.rows[0]))
+    .catch((error) => {
+      if (error.code === "23505") {
+        res.status(400).send("Duplicate ISBN number");
+      } else {
+        console.log(error);
+        res.status(500).send("Something went wrong :( ...");
+      }
+    });
+});
+
+//getMyBooks for the usee page
+app.get("/mybooks", function (req, res) {
+  const user_id = req.query.q;
+  
+  let query =
+    "select  b.* from users u join users_vs_books uvb on u.user_id = uvb.users_id join books b on b.id = uvb.books_id where u.user_id = $1"
+
+  pool
+    .query(query, [user_id])
+    .then((result) => res.send(result.rows))
+    .catch((e) => console.error(e));
+});
+
+
+//total number of books of a single user
+app.get("/mytotalbooks", function (req, res) {
+  const user_id = req.query.q;
+  
+  let query =
+    "select  count(b.id) from users u join users_vs_books uvb on u.user_id = uvb.users_id join books b on b.id = uvb.books_id where u.user_id = $1"
+
+  pool
+    .query(query, [user_id])
+    .then((result) => res.send(result.rows))
     .catch((e) => console.error(e));
 });
 

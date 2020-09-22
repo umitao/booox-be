@@ -8,7 +8,7 @@ router.get("/", authorization, async (req, res) => {
   try {
     //payload
     //res.json(req.user);
-    const user = await pool.query("SELECT * FROM users WHERE user_id = $1", [
+    const user = await pool.query("select u.* from users u join users_vs_books uvb on u.user_id = uvb.users_id where u.user_id = $1", [
       req.user.id]);
     res.json(user.rows[0]);
   } catch (err) {
