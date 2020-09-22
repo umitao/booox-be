@@ -15,16 +15,18 @@ app.use(express.json());
 // LOG ALL REQUESTS
 app.use(morgan("dev"));
 
-//Register & Login Routes
+//REGISTER & LOGIN ROUTES
 
 app.use("/auth", require("./routes/jwtAuth"));
 
 app.use("/profile", require("./routes/profile"));
 
-//Add a book
-app.post("/book", authorization, function (req, res) {
+//ADD A BOOK
+app.post("/book", function (req, res) {
+  const jwtToken = req.header("token");
+  const payload = jwt.verify(jwtToken, process.env.jwtSecret);
+  req.user = payload.user;
   const { id } = req.user;
-
   const {
     isbn,
     title,
@@ -36,7 +38,7 @@ app.post("/book", authorization, function (req, res) {
   } = req.body;
 
   let query =
-    "WITH insbook AS (INSERT INTO books (isbn, title, author, publisher, published_date, subtitle,language) VALUES ( $1, $2, $3, $4, $5, $6, $7 ) RETURNING id) INSERT INTO users_vs_books (users_id, books_id) VALUES ($8,(SELECT * FROM insbook)) RETURNING users_id, books_id";
+    "WITH insertbook AS (INSERT INTO books (isbn, title, author, publisher, published_date, subtitle,language) VALUES ( $1, $2, $3, $4, $5, $6, $7 ) RETURNING id) INSERT INTO users_vs_books (users_id, books_id) VALUES ($8,(SELECT * FROM insertbook)) RETURNING users_id, books_id";
 
   pool
     .query(query, [
@@ -58,13 +60,13 @@ app.post("/book", authorization, function (req, res) {
       } else if (error.code === "22001") {
         res.status(400).send("ISBN Number is too long");
       } else {
-        console.log(error);
+        // console.log(error);
         res.status(500).send("Something went wrong :( ...");
       }
     });
 });
 
-//Edit book info
+//EDIT BOOK INFO
 app.put("/bookupdate:bookId", authorization, function (req, res) {
   const { bookId } = req.params;
   const { title, author, publisher, subtitle, language } = req.body;
@@ -77,7 +79,9 @@ app.put("/bookupdate:bookId", authorization, function (req, res) {
   pool.query(query, [title, author, publisher, subtitle, language, bookId]);
 });
 
-//Search engine with tsquery
+//DELETE A BOOK
+
+//SEARCHING WITH TSQUERY - INDEXING & TRIGGERS LACKING ON DB
 app.get("/search", function (req, res) {
   const searchTerm = req.query.q;
   const regexSearch = searchTerm.replace(/\b\s/g, ":* | ") + ":*";
@@ -91,7 +95,7 @@ app.get("/search", function (req, res) {
     .catch((err) => console.error(err));
 });
 
-//Profile page
+//PROFILE PAGE
 app.get("/userpage", authorization, function (req, res) {
   const { id } = req.user;
   let query = "SELECT name FROM users WHERE id = $1";
@@ -102,7 +106,7 @@ app.get("/userpage", authorization, function (req, res) {
     .catch((err) => console.error(err));
 });
 
-//Get all books
+//GET ALL BOOKS
 app.get("/books", function (req, res) {
   let query = "SELECT * FROM books";
 
@@ -112,10 +116,11 @@ app.get("/books", function (req, res) {
     .catch((err) => console.error(err));
 });
 
+//GET BOOKS OF A USER
 app.get("/:id/books", authorization, function (req, res) {
   const { id } = req.params;
   let query =
-    "select * from books b join users_vs_books uvb on b.id = uvb.books_id where uvb.users_id = $1;";
+    "SELECT * FROM books b JOIN users_vs_books uvb ON b.id = uvb.books_id WHERE uvb.users_id = $1;";
 
   pool
     .query(query, [id])
