@@ -26,6 +26,7 @@ app.post("/book", function (req, res) {
   const jwtToken = req.header("token");
   const payload = jwt.verify(jwtToken, process.env.jwtSecret);
   req.user = payload.user;
+
   const { id } = req.user;
   const {
     isbn,
@@ -80,6 +81,20 @@ app.put("/bookupdate:bookId", authorization, function (req, res) {
 });
 
 //DELETE A BOOK
+app.delete("/delete", function (req, res) {
+  const { q } = req.query;
+
+  let query =
+    "WITH deletebook AS (DELETE FROM users_vs_books uvb WHERE books_id = $1 RETURNING books_id) DELETE FROM books b WHERE id = (SELECT * FROM deletebook);";
+
+  pool
+    .query(query, [q])
+    .then((result) => res.status(200).send(`Book with ID=${q} deleted`))
+    .catch((error) => {
+      console.log(error);
+      res.status(500).send("Something went wrong :( ...");
+    });
+});
 
 //SEARCHING WITH TSQUERY - INDEXING & TRIGGERS LACKING ON DB
 app.get("/search", function (req, res) {
@@ -117,13 +132,25 @@ app.get("/books", function (req, res) {
 });
 
 //GET BOOKS OF A USER
-app.get("/:id/books", authorization, function (req, res) {
+app.get("/:id/books", function (req, res) {
   const { id } = req.params;
+
   let query =
     "SELECT * FROM books b JOIN users_vs_books uvb ON b.id = uvb.books_id WHERE uvb.users_id = $1;";
 
   pool
     .query(query, [id])
+    .then((result) => res.json(result.rows))
+    .catch((err) => console.error(err));
+});
+
+//SINGLE BOOK PAGE QUERY
+app.get("/book", function (req, res) {
+  const bookId = req.query.q;
+  let query = "SELECT * FROM books WHERE id = $1";
+
+  pool
+    .query(query, [bookId])
     .then((result) => res.json(result.rows))
     .catch((err) => console.error(err));
 });
