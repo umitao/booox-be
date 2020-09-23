@@ -98,7 +98,7 @@ app.delete("/delete", function (req, res) {
 
 //SEARCHING WITH TSQUERY - INDEXING & TRIGGERS LACKING ON DB
 app.get("/search", function (req, res) {
-  const searchTerm = req.query.q;
+  const { q: searchTerm } = req.query;
   const regexSearch = searchTerm.replace(/\b\s/g, ":* | ") + ":*";
 
   let query =
