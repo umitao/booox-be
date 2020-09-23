@@ -157,55 +157,6 @@ app.get("/book", function (req, res) {
     .catch((err) => console.error(err));
 });
 
-app.delete("/delete", function (req, res) {
-  //const { searchTerm } = req.body;
-  const deleteTerm = req.query.q;
-
-  let query = "delete from books where books.id = $1;";
-
-  pool
-    .query(query, [deleteTerm])
-    .then((result) => res.status(200).json(result.rows[0]))
-    .catch((e) => console.error(e));
-});
-
-//registering 401 for unauthorised and 403 for unauthenticated
-app.post("/register", async (req, res) => {
-  try {
-    //1.destructure the req.body
-
-    const { name, email, password } = req.body;
-
-    //2.check if the user exists (if exists then throw the error)
-
-    const user = await pool.query("SELECT * FROM users WHERE user_email = $1", [
-      email,
-    ]);
-
-    if (user.rows.length !== 0) {
-      return res.status(401).send("user already exists");
-    }
-
-    //3. Bycript the user password
-
-    const saltRound = 10;
-    const salt = await bcrypt.genSalt(saltRound);
-    const bcryptPassword = await bcrypt.hash(password, salt);
-
-    //4. enter the new user inside our database
-
-    const newUser = await pool.query(
-      "INSERT INTO users (user_name, user_email, user_password) values ($1, $2, $3) returning *",
-      [name, email, bcryptPassword]
-    );
-    res.json(newUser.rows[0]);
-    res.send("new user added");
-  } catch (err) {
-    console.error(error.message);
-    res.status(500).send("server error");
-  }
-});
-
 app.listen(3001, function () {
   console.log("Server is listening on port 3001. Ready to accept requests!");
 });
