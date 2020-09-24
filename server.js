@@ -10,7 +10,6 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 // READ BODIES AND URL FROM REQUESTS
-app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -112,6 +111,16 @@ app.get("/search", function (req, res) {
     .catch((err) => console.error(err));
 });
 
+//GET ALL BOOKS
+app.get("/books", function (req, res) {
+  let query = "SELECT * FROM books";
+
+  pool
+    .query(query)
+    .then((result) => res.json(result.rows))
+    .catch((err) => console.error(err));
+});
+
 //PROFILE PAGE
 app.get("/userpage", authorization, function (req, res) {
   const { id } = req.user;
@@ -119,16 +128,6 @@ app.get("/userpage", authorization, function (req, res) {
 
   pool
     .query(query, [id])
-    .then((result) => res.json(result.rows))
-    .catch((err) => console.error(err));
-});
-
-//GET ALL BOOKS
-app.get("/books", function (req, res) {
-  let query = "SELECT * FROM books";
-
-  pool
-    .query(query)
     .then((result) => res.json(result.rows))
     .catch((err) => console.error(err));
 });
