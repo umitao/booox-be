@@ -49,7 +49,7 @@ router.post("/login", validInfo, async (req, res) => {
     const user = await pool.query("SELECT * FROM users WHERE email = $1", [
       email,
     ]);
-    console.log(user.rows);
+    // console.log(user.rows);
     if (user.rows.length === 0) {
       return res.status(401).json("Invalid Credentials!");
     }

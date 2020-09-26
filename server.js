@@ -7,7 +7,9 @@ app.use(cors());
 const pool = require("./db");
 const authorization = require("./middleware/authorization");
 const jwt = require("jsonwebtoken");
+const { checkout } = require("./routes/jwtAuth");
 require("dotenv").config();
+const tsquery = require("pg-tsquery")(/* options can be passed to override the defaults */);
 
 // READ BODIES AND URL FROM REQUESTS
 app.use(express.urlencoded({ extended: true }));
@@ -100,13 +102,12 @@ app.delete("/delete", function (req, res) {
 //SEARCHING WITH TSQUERY - INDEXING & TRIGGERS LACKING ON DB
 app.get("/search", function (req, res) {
   const { q: searchTerm } = req.query;
-  const regexSearch = searchTerm.replace(/\b\s/g, ":* | ") + ":*";
 
   let query =
     "SELECT * FROM books WHERE title_tokens || author_tokens || language_tokens @@ to_tsquery($1);";
 
   pool
-    .query(query, [regexSearch])
+    .query(query, [tsquery(searchTerm)])
     .then((result) => res.json(result.rows))
     .catch((err) => console.error(err));
 });
@@ -121,16 +122,16 @@ app.get("/books", function (req, res) {
     .catch((err) => console.error(err));
 });
 
-//PROFILE PAGE
-app.get("/userpage", authorization, function (req, res) {
-  const { id } = req.user;
-  let query = "SELECT name FROM users WHERE id = $1";
+//PROFILE PAGE - USE /profile IMPORTED AT TOP
+// app.get("/userpage", authorization, function (req, res) {
+//   const { id } = req.user;
+//   let query = "SELECT name FROM users WHERE id = $1";
 
-  pool
-    .query(query, [id])
-    .then((result) => res.json(result.rows))
-    .catch((err) => console.error(err));
-});
+//   pool
+//     .query(query, [id])
+//     .then((result) => res.json(result.rows[0]))
+//     .catch((err) => console.error(err));
+// });
 
 //GET BOOKS OF A USER
 app.get("/:id/books", function (req, res) {
@@ -156,9 +157,36 @@ app.get("/book", function (req, res) {
     .catch((err) => console.error(err));
 });
 
-//REQUEST BOOK
+// REQUEST BOOK
+app.post("/requestbook", authorization, (req, res) => {
+  console.log(req.user);
+  const { id: user } = req.user;
+  const { book } = req.query;
 
-app.post("/requestbook", (req, res) => {});
+  let query =
+    "WITH insbook AS ( SELECT (users_id) FROM users_vs_books uvb WHERE books_id = $2)INSERT INTO book_requests (requesting_user_id, book_id, owner_id) VALUES ($1, $2, (SELECT * FROM insbook))";
+
+  pool
+    .query(query, [user, book])
+    .then((result) => res.json(result.rows[0]))
+    .catch((err) => {
+      if (err.code === "23503") {
+        res.status(400).send("Book does not exist.");
+      } else if (err.code === "23502") {
+        res.status(400).send("No user has this book.");
+      } else if (err.code === "23514") {
+        res.status(400).send("You cannot request a book you own!");
+      } else {
+        console.error(err);
+      }
+    });
+
+  //Owner book and req.user
+  //Return date & status
+});
+
+// //LIST MY REQUESTED BOOKS & TAKEN BOOKS
+// app.get("/app/req")
 
 app.listen(3001, function () {
   console.log("Server is listening on port 3001. Ready to accept requests!");

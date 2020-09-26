@@ -8,7 +8,7 @@ module.exports = async (req, res, next) => {
       return res.status(403).json("Login first to use this function");
     }
     const payload = jwt.verify(jwtToken, process.env.jwtSecret);
-    // console.log(payload.user);
+    console.log(payload);
     // console.log(req.user);
     req.user = payload.user;
     next();
