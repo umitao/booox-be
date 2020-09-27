@@ -159,15 +159,15 @@ app.get("/book", function (req, res) {
 
 // REQUEST BOOK
 app.post("/requestbook", authorization, (req, res) => {
-  console.log(req.user);
+  // console.log(req.user);
   const { id: user } = req.user;
-  const { book } = req.query;
+  const { book, owner } = req.params;
 
   let query =
-    "WITH insbook AS ( SELECT (users_id) FROM users_vs_books uvb WHERE books_id = $2)INSERT INTO book_requests (requesting_user_id, book_id, owner_id) VALUES ($1, $2, (SELECT * FROM insbook))";
+    "INSERT INTO book_requests (requesting_user_id, book_id, owner_id) VALUES ($1, $2, $3) RETURNING *";
 
   pool
-    .query(query, [user, book])
+    .query(query, [user, book, owner])
     .then((result) => res.json(result.rows[0]))
     .catch((err) => {
       if (err.code === "23503") {
@@ -176,6 +176,8 @@ app.post("/requestbook", authorization, (req, res) => {
         res.status(400).send("No user has this book.");
       } else if (err.code === "23514") {
         res.status(400).send("You cannot request a book you own!");
+      } else if (err.code === "23505") {
+        res.status(400).send("You cannot request same book twice!");
       } else {
         console.error(err);
       }
@@ -184,9 +186,6 @@ app.post("/requestbook", authorization, (req, res) => {
   //Owner book and req.user
   //Return date & status
 });
-
-// //LIST MY REQUESTED BOOKS & TAKEN BOOKS
-// app.get("/app/req")
 
 app.listen(3001, function () {
   console.log("Server is listening on port 3001. Ready to accept requests!");
