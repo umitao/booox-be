@@ -23,11 +23,10 @@ app.use("/auth", require("./routes/jwtAuth"));
 app.use("/profile", require("./routes/profile"));
 
 //ADD A BOOK
-app.post("/book", function (req, res) {
-  const jwtToken = req.header("token");
-  const payload = jwt.verify(jwtToken, process.env.jwtSecret);
-  req.user = payload.user;
-
+app.post("/book",authorization, function (req, res) {
+  // const jwtToken = req.header("token");
+  // const payload = jwt.verify(jwtToken, process.env.jwtSecret);
+  // req.user = payload.user;
   const { id } = req.user;
   const {
     isbn,
@@ -135,7 +134,7 @@ app.get("/userpage", authorization, function (req, res) {
     .catch((err) => console.error(err));
 });
 
-//GET ALL BOOKS
+//GET ALL BOOKS for homescreen.................................................................................................
 app.get("/books", function (req, res) {
   let query = "SELECT * FROM books limit 60";
 
@@ -175,7 +174,7 @@ app.get("/:id/books", function (req, res) {
 //SINGLE BOOK PAGE QUERY
 app.get("/book", function (req, res) {
   const bookId = req.query.q;
-  let query = "select * FROM books b join users_vs_books uvb on b.id = uvb.books_id WHERE b.id = $1 ";
+  let query = "select * FROM books b join users_vs_books uvb on b.id = uvb.books_id WHERE b.id = $1";
 
   pool
     .query(query, [bookId])
@@ -191,7 +190,7 @@ app.post("/requestbook",(req, res) => {
    console.log(userId);
 
   const query1 = "select users_id from users_vs_books uvb where books_id = $1"
-  const query2 ="INSERT INTO book_requests (requesting_user_id, book_id, owner_id) VALUES ($1, $2, $3) RETURNING *";
+  const query2 ="INSERT INTO book_requests (requesting_user_id, book_id, owner_id) VALUES ($1, $2, $3) RETURNING * ";
 
   pool
     .query(query1, [bookId])
@@ -217,6 +216,59 @@ app.post("/requestbook",(req, res) => {
   //Owner book and req.user
   //Return date & status
 });
+
+//request status of a particular book with owner
+
+app.get("/myBookRequestStatus",(req, res) => {
+   const bookId = req.query.q;
+
+  const query1 = "select users_id from users_vs_books uvb where books_id = $1"
+  const query2 = "select users.name,users.email,book_requests.id, book_requests.status from book_requests join users on book_requests.requesting_user_id = users.id join books on book_requests.book_id = books.id where book_requests.owner_id = $1 and books.id = $2 ";
+
+  pool
+    .query(query1, [bookId])
+    .then((result) => {
+      const ownerId = result.rows[0].users_id;
+      pool.query(query2, [ownerId, bookId]).then((result) => res.status(200).json(result.rows)).catch(err => console.error(err))
+
+      })
+    .catch((err) => {
+      
+        console.error(err);
+    
+    });
+  }); 
+
+  //accepting the user request for the particular book 
+
+  // app.put("/requestUpdate", (req, res) => {
+  //     const requestId =
+
+
+  // })
+
+
+
+//request status query............................................................................................
+app.get("/requeststatus", function (req, res) {
+  const bookId = req.query.q;
+  let query = "select users.name, books.title, book_requests.status from book_requests join users on book_requests.requesting_user_id = users.id join books on book_requests.book_id = books.id where book_requests.owner_id = $1";
+
+  pool
+    .query(query, [bookId])
+    .then((result) => res.status(200).json(result.rows))
+    .catch((err) => console.error(err));
+});
+
+//update status endpoint(accept).............................................................................................
+app.put("/requestUpdate", function (req, res) {
+  const requestId = req.query.q;
+  const query = "UPDATE book_requests SET status = 'accepted' WHERE id = $1 returning id"
+
+  pool.query(query, [requestId]).then((result) => res.status(200).send(result.rows)).catch((err) => console.error(err))
+
+
+})
 
 app.listen(3001, function () {
   console.log("Server is listening on port 3001. Ready to accept requests!");
