@@ -10,7 +10,6 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 // READ BODIES AND URL FROM REQUESTS
-app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -85,26 +84,39 @@ app.put("/bookupdate:bookId", authorization, function (req, res) {
 //DELETE A BOOK
 app.delete("/delete", function (req, res) {
   const { q } = req.query;
+  console.log(q);
 
   let query =
-    "WITH deletebook AS (DELETE FROM users_vs_books uvb WHERE books_id = $1 RETURNING books_id) DELETE FROM books b WHERE id = (SELECT * FROM deletebook);";
+      "WITH deletebook AS (DELETE FROM users_vs_books uvb WHERE books_id = $1 RETURNING books_id) DELETE FROM books b WHERE id = (SELECT * FROM deletebook)";
 
   pool
     .query(query, [q])
-    .then((result) => res.status(200).send(`Book with ID=${q} deleted`))
+    .then(() => res.status(200).send(`Book with ID=${q} deleted`))
     .catch((error) => {
       console.log(error);
-      res.status(500).send("Something went wrong :( ...");
+      res.status(500).send("Something went wrong :( ...");  
     });
 });
 
 //SEARCHING WITH TSQUERY - INDEXING & TRIGGERS LACKING ON DB
 app.get("/search", function (req, res) {
-  const { q: searchTerm } = req.query;
-  const regexSearch = searchTerm.replace(/\b\s/g, ":* | ") + ":*";
+  const { q : searchTerm } = req.query;
+  const regexSearch = searchTerm.replace(/\b\s/g, ":* | " );//faced some problem with the tsquery on this line please recheck with master branch
 
   let query =
     "SELECT * FROM books WHERE title_tokens || author_tokens || language_tokens @@ to_tsquery($1);";
+
+  pool
+    .query(query, [regexSearch])
+    .then((result) => res.json(result.rows))
+    .catch((err) => console.error(err));
+});
+
+
+//all for display try
+app.get("/search", function (req, res) {
+  const { q : searchTerm } = req.query;
+  let query = "SELECT * FROM books limit 60";
 
   pool
     .query(query, [regexSearch])
@@ -125,10 +137,24 @@ app.get("/userpage", authorization, function (req, res) {
 
 //GET ALL BOOKS
 app.get("/books", function (req, res) {
-  let query = "SELECT * FROM books";
+  let query = "SELECT * FROM books limit 60";
 
   pool
     .query(query)
+    .then((result) => res.json(result.rows))
+    .catch((err) => console.error(err));
+});
+
+
+//get requests of the user 
+app.get("/:id/request", function (req, res) {
+  const { id } = req.params;
+
+  let query = 
+    "SELECT * FROM books b JOIN users_vs_books uvb ON b.id = uvb.books_id WHERE uvb.users_id = $1;";
+
+  pool
+    .query(query, [id])
     .then((result) => res.json(result.rows))
     .catch((err) => console.error(err));
 });
@@ -137,7 +163,7 @@ app.get("/books", function (req, res) {
 app.get("/:id/books", function (req, res) {
   const { id } = req.params;
 
-  let query =
+  let query = 
     "SELECT * FROM books b JOIN users_vs_books uvb ON b.id = uvb.books_id WHERE uvb.users_id = $1;";
 
   pool
@@ -149,12 +175,47 @@ app.get("/:id/books", function (req, res) {
 //SINGLE BOOK PAGE QUERY
 app.get("/book", function (req, res) {
   const bookId = req.query.q;
-  let query = "SELECT * FROM books WHERE id = $1";
+  let query = "select * FROM books b join users_vs_books uvb on b.id = uvb.books_id WHERE b.id = $1 ";
 
   pool
     .query(query, [bookId])
     .then((result) => res.json(result.rows))
     .catch((err) => console.error(err));
+});
+
+// REQUEST BOOK..........................................................................................................................
+app.post("/requestbook",(req, res) => {
+  // console.log(req.user);
+
+   const {bookId, userId} = req.body;
+   console.log(userId);
+
+  const query1 = "select users_id from users_vs_books uvb where books_id = $1"
+  const query2 ="INSERT INTO book_requests (requesting_user_id, book_id, owner_id) VALUES ($1, $2, $3) RETURNING *";
+
+  pool
+    .query(query1, [bookId])
+    .then((result) => {
+      const ownerId = result.rows[0].users_id;
+      pool.query(query2, [userId, bookId, ownerId]).then(() => res.status(200).send("Book Requested")).catch(err => console.error(err))
+
+      })
+    .catch((err) => {
+      if (err.code === "23503") {
+        res.status(400).send("Book does not exist.");
+      } else if (err.code === "23502") {
+        res.status(400).send("No user has this book.");
+      } else if (err.code === "23514") {
+        res.status(400).send("You cannot request a book you own!");
+      } else if (err.code === "23505") {
+        res.status(400).send("You cannot request same book twice!");
+      } else {
+        console.error(err);
+      }
+    });
+
+  //Owner book and req.user
+  //Return date & status
 });
 
 app.listen(3001, function () {
