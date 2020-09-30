@@ -249,19 +249,35 @@ app.get("/myBookRequestStatus",(req, res) => {
 
 
 
-//request status query............................................................................................
-app.get("/requeststatus", function (req, res) {
-  const bookId = req.query.q;
-  let query = "select users.name, books.title, book_requests.status from book_requests join users on book_requests.requesting_user_id = users.id join books on book_requests.book_id = books.id where book_requests.owner_id = $1";
+//request all incoming book request status query............................................................................................
+app.get("/myincomingrequests", function (req, res) {
+  const ownerId = req.query.q;
+  const status = "pending"
+  let query = "select users.name,users.email, books.title, book_requests.status from book_requests join users on book_requests.requesting_user_id = users.id join books on book_requests.book_id = books.id where book_requests.owner_id = $1";
 
   pool
-    .query(query, [bookId])
+    .query(query, [ownerId])
     .then((result) => res.status(200).json(result.rows))
     .catch((err) => console.error(err));
 });
 
+//request all outgoing book request status query.............................................................................................
+app.get("/myoutgoingrequests", function (req, res) {
+  const ownerId = req.query.q;
+  const status = "pending"
+  let query = "select users.name,users.email, books.title, book_requests.status from book_requests join users on book_requests.owner_id = users.id join books on book_requests.book_id = books.id where book_requests.requesting_user_id = $1";
+
+  pool
+    .query(query, [ownerId])
+    .then((result) => res.status(200).json(result.rows))
+    .catch((err) => console.error(err));
+});
+
+
+
+
 //update status endpoint(accept).............................................................................................
-app.put("/requestUpdate", function (req, res) {
+app.put("/request/accept", function (req, res) {
   const requestId = req.query.q;
   const query = "UPDATE book_requests SET status = 'accepted' WHERE id = $1 returning id"
 
@@ -269,6 +285,18 @@ app.put("/requestUpdate", function (req, res) {
 
 
 })
+
+//update status endpoint (reject).............................................................................................
+app.put("/request/reject", function (req, res) {
+  const requestId = req.query.q;
+  const query = "UPDATE book_requests SET status = 'rejected' WHERE id = $1 returning id"
+
+  pool.query(query, [requestId]).then((result) => res.status(200).send(result.rows)).catch((err) => console.error(err))
+
+
+})
+
+
 
 app.listen(3001, function () {
   console.log("Server is listening on port 3001. Ready to accept requests!");
