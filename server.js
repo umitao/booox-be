@@ -136,6 +136,7 @@ app.get("/books", function (req, res) {
 app.get("/userpage", authorization, function (req, res) {
   const { id } = req.user;
   let query = "SELECT name FROM users WHERE id = $1";
+});
 //GET ALL BOOKS for homescreen.................................................................................................
 app.get("/books", function (req, res) {
   let query = "SELECT * FROM books limit 40";
